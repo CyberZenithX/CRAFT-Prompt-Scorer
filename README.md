@@ -6,7 +6,7 @@ A one-shot prompt-writing exercise. Users see a deliberately weak prompt for gen
 
 - Next.js App Router
 - TypeScript
-- Gemini API, called only from the server
+- Gemini Interactions API, called only from the server
 - Vercel-ready
 - No database required
 
@@ -61,7 +61,7 @@ Gemini receives a fixed 100-point rubric covering:
 - CTA
 - constraints and quality controls
 
-Structured JSON output is required, so the application receives only a numeric score and an array of missing requirements.
+Structured JSON output is required, so the application receives only a numeric score and an array of missing requirements. The Gemini request is stateless (`store: false`).
 
 Prompt length itself does not earn points.
 
