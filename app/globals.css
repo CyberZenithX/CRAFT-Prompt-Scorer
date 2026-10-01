@@ -125,6 +125,91 @@ h1 {
   font-size: 14px;
 }
 
+
+.promptGuide {
+  margin: 18px 0;
+}
+
+.guideHeader {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.guideHeader h2 {
+  margin: 7px 0 0;
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: -0.045em;
+  line-height: 1.03;
+}
+
+.guideHeader > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 560px;
+  justify-self: end;
+}
+
+.guideGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.guideCard {
+  min-height: 210px;
+  padding: 20px;
+  border: 1px solid rgba(40, 40, 40, 0.09);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 10px 28px rgba(35, 35, 30, 0.035);
+}
+
+.guideCard h3 {
+  margin: 40px 0 8px;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.guideCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.guideNumber,
+.guideTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.guideNumber {
+  background: #f0efe9;
+  color: #65665f;
+}
+
+.guideTag {
+  background: var(--soft);
+  color: var(--accent-dark);
+}
+
+.captionCard {
+  background:
+    linear-gradient(180deg, rgba(244, 241, 255, 0.8), rgba(255, 255, 255, 0.68));
+  border-color: rgba(108, 92, 231, 0.16);
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 0.82fr 1.18fr;
@@ -310,7 +395,9 @@ footer {
 
 @media (max-width: 780px) {
   .shell { padding-top: 42px; }
-  .brief, .workspace, .result { grid-template-columns: 1fr; }
+  .brief, .workspace, .result, .guideHeader { grid-template-columns: 1fr; }
+  .guideGrid { grid-template-columns: 1fr 1fr; }
+  .guideHeader > p { justify-self: start; }
   .briefGrid { grid-template-columns: 1fr; }
   .badCard, .goodCard { min-height: auto; }
   .badPrompt { margin: 38px 0; }
@@ -320,4 +407,9 @@ footer {
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
+}
+
+@media (max-width: 540px) {
+  .guideGrid { grid-template-columns: 1fr; }
+  .guideCard { min-height: 180px; }
 }
