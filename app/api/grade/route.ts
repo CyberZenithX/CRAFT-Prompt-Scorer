@@ -2,8 +2,9 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-const COOKIE = "prompt_challenge_attempted";
-const RESULT_COOKIE = "prompt_challenge_result";
+const LEGACY_ATTEMPT_COOKIE = "prompt_challenge_attempted";
+const LEGACY_RESULT_COOKIE = "prompt_challenge_result";
+const STATE_COOKIE = "prompt_challenge_state";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const RUBRIC = [
@@ -46,20 +47,38 @@ type GeminiResult = {
   missing: string[];
 };
 
+type ChallengeState = {
+  attemptsUsed: number;
+  result: GeminiResult | null;
+};
+
+type InteractionStep = {
+  type?: string;
+  content?: Array<{
+    type?: string;
+    text?: string;
+  }>;
+};
+
+function getAttemptLimit() {
+  const parsed = Number.parseInt(process.env.ATTEMPT_LIMIT || "1", 10);
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+}
+
 function getCookieSecret() {
   return process.env.RESULT_COOKIE_SECRET || process.env.GEMINI_API_KEY || "";
 }
 
-function signResult(result: GeminiResult) {
+function signPayload(value: unknown) {
   const secret = getCookieSecret();
   if (!secret) throw new Error("No cookie-signing secret is configured.");
 
-  const payload = Buffer.from(JSON.stringify(result), "utf8").toString("base64url");
+  const payload = Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
   const signature = createHmac("sha256", secret).update(payload).digest("base64url");
   return payload + "." + signature;
 }
 
-function readSignedResult(value?: string): GeminiResult | null {
+function readSignedPayload<T>(value?: string): T | null {
   if (!value) return null;
 
   const secret = getCookieSecret();
@@ -83,51 +102,108 @@ function readSignedResult(value?: string): GeminiResult | null {
   }
 
   try {
-    const parsed = JSON.parse(
-      Buffer.from(payload, "base64url").toString("utf8")
-    ) as GeminiResult;
-
-    if (
-      !Number.isInteger(parsed.score) ||
-      parsed.score < 0 ||
-      parsed.score > 100 ||
-      !Array.isArray(parsed.missing) ||
-      !parsed.missing.every((item) => typeof item === "string")
-    ) {
-      return null;
-    }
-
-    return {
-      score: parsed.score,
-      missing: parsed.missing.slice(0, 10)
-    };
+    return JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as T;
   } catch {
     return null;
   }
 }
 
-type InteractionStep = {
-  type?: string;
-  content?: Array<{
-    type?: string;
-    text?: string;
-  }>;
-};
+function validateResult(value: unknown): GeminiResult | null {
+  if (!value || typeof value !== "object") return null;
+
+  const result = value as GeminiResult;
+  if (
+    !Number.isInteger(result.score) ||
+    result.score < 0 ||
+    result.score > 100 ||
+    !Array.isArray(result.missing) ||
+    !result.missing.every((item) => typeof item === "string")
+  ) {
+    return null;
+  }
+
+  return {
+    score: result.score,
+    missing: result.missing.slice(0, 10)
+  };
+}
+
+function readState(request: NextRequest): ChallengeState {
+  const rawState = readSignedPayload<ChallengeState>(
+    request.cookies.get(STATE_COOKIE)?.value
+  );
+
+  if (
+    rawState &&
+    Number.isInteger(rawState.attemptsUsed) &&
+    rawState.attemptsUsed >= 0
+  ) {
+    return {
+      attemptsUsed: rawState.attemptsUsed,
+      result: validateResult(rawState.result)
+    };
+  }
+
+  // Backward compatibility with the original one-attempt cookie format.
+  const legacyAttempted =
+    request.cookies.get(LEGACY_ATTEMPT_COOKIE)?.value === "1";
+  const legacyResult = validateResult(
+    readSignedPayload<GeminiResult>(
+      request.cookies.get(LEGACY_RESULT_COOKIE)?.value
+    )
+  );
+
+  return {
+    attemptsUsed: legacyAttempted ? 1 : 0,
+    result: legacyResult
+  };
+}
+
+function setStateCookie(response: NextResponse, state: ChallengeState) {
+  response.cookies.set(STATE_COOKIE, signPayload(state), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: COOKIE_MAX_AGE
+  });
+
+  // Remove the old cookie format after migration.
+  response.cookies.set(LEGACY_ATTEMPT_COOKIE, "", {
+    path: "/",
+    maxAge: 0
+  });
+  response.cookies.set(LEGACY_RESULT_COOKIE, "", {
+    path: "/",
+    maxAge: 0
+  });
+}
 
 export async function GET(request: NextRequest) {
-  const attempted = request.cookies.get(COOKIE)?.value === "1";
-  const result = readSignedResult(request.cookies.get(RESULT_COOKIE)?.value);
+  const state = readState(request);
+  const attemptLimit = getAttemptLimit();
 
   return NextResponse.json({
-    attempted,
-    result
+    attemptsUsed: state.attemptsUsed,
+    attemptLimit,
+    attemptsRemaining: Math.max(0, attemptLimit - state.attemptsUsed),
+    canAttempt: state.attemptsUsed < attemptLimit,
+    result: state.result
   });
 }
 
 export async function POST(request: NextRequest) {
-  if (request.cookies.get(COOKIE)?.value === "1") {
+  const state = readState(request);
+  const attemptLimit = getAttemptLimit();
+
+  if (state.attemptsUsed >= attemptLimit) {
     return NextResponse.json(
-      { error: "This browser has already used its one grading attempt." },
+      {
+        error: "You have used all available grading attempts.",
+        attemptsUsed: state.attemptsUsed,
+        attemptLimit,
+        attemptsRemaining: 0
+      },
       { status: 409 }
     );
   }
@@ -219,7 +295,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await geminiResponse.json();
-    const steps = Array.isArray(data?.steps) ? (data.steps as InteractionStep[]) : [];
+    const steps = Array.isArray(data?.steps)
+      ? (data.steps as InteractionStep[])
+      : [];
     const modelOutput = steps.find((step) => step?.type === "model_output");
     const textPart = modelOutput?.content?.find(
       (part) => part?.type === "text" && typeof part.text === "string"
@@ -244,22 +322,22 @@ export async function POST(request: NextRequest) {
       throw new Error("Gemini returned an invalid score.");
     }
 
-    const response = NextResponse.json({ score, missing });
+    const result = { score, missing };
+    const attemptsUsed = state.attemptsUsed + 1;
+    const attemptsRemaining = Math.max(0, attemptLimit - attemptsUsed);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: COOKIE_MAX_AGE
-    };
+    const response = NextResponse.json({
+      ...result,
+      attemptsUsed,
+      attemptLimit,
+      attemptsRemaining,
+      canAttempt: attemptsUsed < attemptLimit
+    });
 
-    response.cookies.set(COOKIE, "1", cookieOptions);
-    response.cookies.set(
-      RESULT_COOKIE,
-      signResult({ score, missing }),
-      cookieOptions
-    );
+    setStateCookie(response, {
+      attemptsUsed,
+      result
+    });
 
     return response;
   } catch (error) {
