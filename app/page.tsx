@@ -94,6 +94,57 @@ export default function Home() {
         </div>
       </section>
 
+
+      <section className="promptGuide">
+        <div className="guideHeader">
+          <div>
+            <span className="label">PROMPT BUILDING BLOCKS</span>
+            <h2>What a strong prompt usually includes</h2>
+          </div>
+          <p>
+            You do not need to use every box word-for-word. Think of these as the kinds of decisions a good prompt makes clear for the AI.
+          </p>
+        </div>
+
+        <div className="guideGrid">
+          <article className="guideCard">
+            <span className="guideNumber">01</span>
+            <h3>Clear task</h3>
+            <p>Say exactly what you want the AI to create, solve, explain, compare, rewrite, or decide.</p>
+          </article>
+
+          <article className="guideCard">
+            <span className="guideNumber">02</span>
+            <h3>Useful context</h3>
+            <p>Give the background the AI needs so it does not have to guess what situation it is working in.</p>
+          </article>
+
+          <article className="guideCard">
+            <span className="guideNumber">03</span>
+            <h3>Audience</h3>
+            <p>Tell it who the output is for. The same answer should look very different for students, customers, experts, or beginners.</p>
+          </article>
+
+          <article className="guideCard">
+            <span className="guideNumber">04</span>
+            <h3>Style & constraints</h3>
+            <p>Define tone, length, things to avoid, must-have details, or any boundaries that matter.</p>
+          </article>
+
+          <article className="guideCard captionCard">
+            <span className="guideTag">CAPTION</span>
+            <h3>Hook & message</h3>
+            <p>For social captions, make the opening attention-worthy and be clear about the main idea or benefit the post should land.</p>
+          </article>
+
+          <article className="guideCard captionCard">
+            <span className="guideTag">CAPTION</span>
+            <h3>Platform & action</h3>
+            <p>Think about Instagram-friendly structure, readability, and what you want the reader to do after reading.</p>
+          </article>
+        </div>
+      </section>
+
       <section className="workspace">
         <article className="card badCard">
           <div className="cardTop">
