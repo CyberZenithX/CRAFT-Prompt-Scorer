@@ -20,7 +20,12 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/grade", { cache: "no-store" })
       .then((response) => response.json())
-      .then((data) => setAttempted(Boolean(data.attempted)))
+      .then((data) => {
+        setAttempted(Boolean(data.attempted));
+        if (data.result && typeof data.result.score === "number" && Array.isArray(data.result.missing)) {
+          setResult(data.result);
+        }
+      })
       .catch(() => {})
       .finally(() => setCheckingAttempt(false));
   }, []);
