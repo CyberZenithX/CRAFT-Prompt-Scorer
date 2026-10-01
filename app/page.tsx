@@ -13,7 +13,9 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<GradeResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [attempted, setAttempted] = useState(false);
+  const [attemptsUsed, setAttemptsUsed] = useState(0);
+  const [attemptLimit, setAttemptLimit] = useState(1);
+  const [canAttempt, setCanAttempt] = useState(true);
   const [checkingAttempt, setCheckingAttempt] = useState(true);
   const [error, setError] = useState("");
 
@@ -21,7 +23,9 @@ export default function Home() {
     fetch("/api/grade", { cache: "no-store" })
       .then((response) => response.json())
       .then((data) => {
-        setAttempted(Boolean(data.attempted));
+        setAttemptsUsed(Number(data.attemptsUsed) || 0);
+        setAttemptLimit(Number(data.attemptLimit) || 1);
+        setCanAttempt(Boolean(data.canAttempt));
         if (data.result && typeof data.result.score === "number" && Array.isArray(data.result.missing)) {
           setResult(data.result);
         }
@@ -32,7 +36,7 @@ export default function Home() {
 
   async function submitPrompt(event: FormEvent) {
     event.preventDefault();
-    if (!prompt.trim() || attempted || loading) return;
+    if (!prompt.trim() || !canAttempt || loading) return;
 
     setLoading(true);
     setError("");
@@ -47,12 +51,18 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 409) setAttempted(true);
+        if (response.status === 409) {
+          setCanAttempt(false);
+          if (typeof data.attemptsUsed === "number") setAttemptsUsed(data.attemptsUsed);
+          if (typeof data.attemptLimit === "number") setAttemptLimit(data.attemptLimit);
+        }
         throw new Error(data.error || "Could not grade your prompt.");
       }
 
-      setResult(data);
-      setAttempted(true);
+      setResult({ score: data.score, missing: data.missing });
+      setAttemptsUsed(Number(data.attemptsUsed) || attemptsUsed + 1);
+      setAttemptLimit(Number(data.attemptLimit) || attemptLimit);
+      setCanAttempt(Boolean(data.canAttempt));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -67,7 +77,7 @@ export default function Home() {
         <h1>One prompt.<br />One shot.</h1>
         <p>
           Rewrite a weak prompt into one that gives an AI everything it needs to create a strong Instagram caption.
-          Gemini grades your first successful submission out of 100.
+          Gemini grades each successful submission out of 100. Your available attempts are controlled globally.
         </p>
       </header>
 
@@ -99,7 +109,7 @@ export default function Home() {
         <form className="card goodCard" onSubmit={submitPrompt}>
           <div className="cardTop">
             <span className="label">YOUR BETTER PROMPT</span>
-            <span className="pill">1 attempt</span>
+            <span className="pill">{Math.max(0, attemptLimit - attemptsUsed)} of {attemptLimit} left</span>
           </div>
 
           <textarea
@@ -108,13 +118,13 @@ export default function Home() {
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Write the prompt you would give an AI..."
             maxLength={5000}
-            disabled={attempted || loading || checkingAttempt}
+            disabled={!canAttempt || loading || checkingAttempt}
           />
 
           <div className="inputFooter">
             <span>{prompt.length}/5000</span>
-            <button disabled={!prompt.trim() || attempted || loading || checkingAttempt}>
-              {checkingAttempt ? "Checking…" : loading ? "Grading…" : attempted ? "Attempt used" : "Grade my prompt"}
+            <button disabled={!prompt.trim() || !canAttempt || loading || checkingAttempt}>
+              {checkingAttempt ? "Checking…" : loading ? "Grading…" : !canAttempt ? "No attempts left" : "Grade my prompt"}
             </button>
           </div>
 
@@ -149,10 +159,10 @@ export default function Home() {
         </section>
       )}
 
-      {!result && attempted && !checkingAttempt && (
+      {!canAttempt && !checkingAttempt && (
         <section className="used card">
-          <span className="label">ATTEMPT COMPLETE</span>
-          <p>This browser has already used its one grading attempt.</p>
+          <span className="label">ATTEMPT LIMIT REACHED</span>
+          <p>You have used {attemptsUsed} of {attemptLimit} available attempts. If the global limit is increased, this page will unlock automatically on reload.</p>
         </section>
       )}
 
