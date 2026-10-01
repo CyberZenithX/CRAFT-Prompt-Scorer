@@ -133,14 +133,14 @@ export default function Home() {
 
           <article className="guideCard captionCard">
             <span className="guideTag">CAPTION</span>
-            <h3>Hook & message</h3>
-            <p>For social captions, make the opening attention-worthy and be clear about the main idea or benefit the post should land.</p>
+            <h3>Hook direction</h3>
+            <p>Tell the AI what kind of opening you want—for example curiosity-driven, bold, relatable, question-led, or benefit-first.</p>
           </article>
 
           <article className="guideCard captionCard">
             <span className="guideTag">CAPTION</span>
-            <h3>Platform & action</h3>
-            <p>Think about Instagram-friendly structure, readability, and what you want the reader to do after reading.</p>
+            <h3>Desired action</h3>
+            <p>Tell the AI what you want the reader to do after the caption, such as try the product, comment, save the post, or visit a link.</p>
           </article>
         </div>
       </section>
