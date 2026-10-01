@@ -7,7 +7,7 @@ type GradeResult = {
   missing: string[];
 };
 
-const BAD_PROMPT = "Write an engaging Instagram caption for this app.";
+const BAD_PROMPT = "Write a nice Instagram caption about our coffee.";
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
@@ -76,21 +76,21 @@ export default function Home() {
         <div className="eyebrow"><span className="dot" /> PROMPT LAB</div>
         <h1>One prompt.<br />One shot.</h1>
         <p>
-          Rewrite a weak prompt into one that gives an AI everything it needs to create a strong Instagram caption.
-          Gemini grades each successful submission out of 100. Your available attempts are controlled globally.
+          Turn a vague request into a clear, useful prompt for an Instagram coffee caption.
+          Keep it simple: give the AI the information it needs, then see how your prompt scores.
         </p>
       </header>
 
       <section className="brief card">
         <div>
           <span className="label">THE SCENARIO</span>
-          <h2>Launch caption for FocusFlow</h2>
+          <h2>Instagram caption for La Lumière Café</h2>
         </div>
         <div className="briefGrid">
-          <p><b>Product</b><span>FocusFlow, an AI study-planning app launching today.</span></p>
-          <p><b>Audience</b><span>University students aged 18–24.</span></p>
-          <p><b>Key value</b><span>Turns deadlines into a realistic daily study plan in seconds.</span></p>
-          <p><b>Goal</b><span>Build curiosity and drive people to try the app.</span></p>
+          <p><b>Café</b><span>La Lumière Café — a premium, modern café.</span></p>
+          <p><b>Coffee</b><span>A signature iced Spanish latte with rich espresso and a smooth, creamy taste.</span></p>
+          <p><b>Audience</b><span>Young coffee lovers who enjoy premium café experiences.</span></p>
+          <p><b>Goal</b><span>Make people want to visit the café and try the drink.</span></p>
         </div>
       </section>
 
@@ -99,48 +99,36 @@ export default function Home() {
         <div className="guideHeader">
           <div>
             <span className="label">PROMPT BUILDING BLOCKS</span>
-            <h2>What a strong prompt usually includes</h2>
+            <h2>Keep these four things in mind</h2>
           </div>
           <p>
-            You do not need to use every box word-for-word. Think of these as the kinds of decisions a good prompt makes clear for the AI.
+            A good prompt does not need to be complicated. It just needs to remove the important guesswork.
           </p>
         </div>
 
-        <div className="guideGrid">
+        <div className="guideGrid simpleGuide">
           <article className="guideCard">
             <span className="guideNumber">01</span>
-            <h3>Clear task</h3>
-            <p>Say exactly what you want the AI to create, solve, explain, compare, rewrite, or decide.</p>
+            <h3>Task</h3>
+            <p>Tell the AI exactly what you want it to create.</p>
           </article>
 
           <article className="guideCard">
             <span className="guideNumber">02</span>
-            <h3>Useful context</h3>
-            <p>Give the background the AI needs so it does not have to guess what situation it is working in.</p>
+            <h3>Context</h3>
+            <p>Include the important details the AI needs to know.</p>
           </article>
 
           <article className="guideCard">
             <span className="guideNumber">03</span>
-            <h3>Audience</h3>
-            <p>Tell it who the output is for. The same answer should look very different for students, customers, experts, or beginners.</p>
-          </article>
-
-          <article className="guideCard">
-            <span className="guideNumber">04</span>
-            <h3>Style & constraints</h3>
-            <p>Define tone, length, things to avoid, must-have details, or any boundaries that matter.</p>
+            <h3>Style</h3>
+            <p>Tell the AI how the result should sound, feel, or be written.</p>
           </article>
 
           <article className="guideCard captionCard">
             <span className="guideTag">CAPTION</span>
-            <h3>Hook direction</h3>
-            <p>Tell the AI what kind of opening you want—for example curiosity-driven, bold, relatable, question-led, or benefit-first.</p>
-          </article>
-
-          <article className="guideCard captionCard">
-            <span className="guideTag">CAPTION</span>
-            <h3>Desired action</h3>
-            <p>Tell the AI what you want the reader to do after the caption, such as try the product, comment, save the post, or visit a link.</p>
+            <h3>Hook + action</h3>
+            <p>For a caption, mention how it should grab attention and what you want the reader to do.</p>
           </article>
         </div>
       </section>
