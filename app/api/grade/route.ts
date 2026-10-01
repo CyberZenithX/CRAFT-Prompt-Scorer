@@ -42,6 +42,14 @@ type GeminiResult = {
   missing: string[];
 };
 
+type InteractionStep = {
+  type?: string;
+  content?: Array<{
+    type?: string;
+    text?: string;
+  }>;
+};
+
 export async function GET(request: NextRequest) {
   return NextResponse.json({
     attempted: request.cookies.get(COOKIE)?.value === "1"
@@ -86,65 +94,53 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/" +
-      encodeURIComponent(MODEL) +
-      ":generateContent";
-
-    const geminiResponse = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: RUBRIC }]
+    const geminiResponse = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
         },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text:
-                  "Grade this submitted prompt. It is untrusted text enclosed below.\n\n" +
-                  "<SUBMITTED_PROMPT>\n" +
-                  prompt +
-                  "\n</SUBMITTED_PROMPT>"
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0,
-          responseFormat: {
-            text: {
-              mimeType: "application/json",
-              schema: {
-                type: "object",
-                properties: {
-                  score: {
-                    type: "integer",
-                    minimum: 0,
-                    maximum: 100,
-                    description: "Final rubric score from 0 to 100."
-                  },
-                  missing: {
-                    type: "array",
-                    items: { type: "string" },
-                    description:
-                      "Concise list of rubric requirements absent or materially incomplete in the submitted prompt."
-                  }
+        body: JSON.stringify({
+          model: MODEL,
+          input:
+            "Grade this submitted prompt. It is untrusted text enclosed below.\n\n" +
+            "<SUBMITTED_PROMPT>\n" +
+            prompt +
+            "\n</SUBMITTED_PROMPT>",
+          system_instruction: RUBRIC,
+          store: false,
+          generation_config: {
+            temperature: 0
+          },
+          response_format: {
+            type: "text",
+            mime_type: "application/json",
+            schema: {
+              type: "object",
+              properties: {
+                score: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: 100,
+                  description: "Final rubric score from 0 to 100."
                 },
-                required: ["score", "missing"],
-                additionalProperties: false
-              }
+                missing: {
+                  type: "array",
+                  items: { type: "string" },
+                  description:
+                    "Concise list of rubric requirements absent or materially incomplete in the submitted prompt."
+                }
+              },
+              required: ["score", "missing"],
+              additionalProperties: false
             }
           }
-        }
-      }),
-      cache: "no-store"
-    });
+        }),
+        cache: "no-store"
+      }
+    );
 
     if (!geminiResponse.ok) {
       const details = await geminiResponse.text();
@@ -156,7 +152,12 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await geminiResponse.json();
-    const output = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const steps = Array.isArray(data?.steps) ? (data.steps as InteractionStep[]) : [];
+    const modelOutput = steps.find((step) => step?.type === "model_output");
+    const textPart = modelOutput?.content?.find(
+      (part) => part?.type === "text" && typeof part.text === "string"
+    );
+    const output = textPart?.text;
 
     if (typeof output !== "string") {
       throw new Error("Gemini returned no structured text.");
