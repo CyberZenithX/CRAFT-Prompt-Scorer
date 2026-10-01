@@ -42,6 +42,7 @@ Optional:
 
 - `GEMINI_MODEL` — defaults to `gemini-3.8-flash`
 - `RESULT_COOKIE_SECRET` — recommended; signs persisted grading results. If omitted, the server falls back to `GEMINI_API_KEY` for signing.
+- `ATTEMPT_LIMIT` — global number of successful grading attempts allowed per browser. Defaults to `1`.
 
 No custom build settings are needed. Vercel will detect Next.js automatically.
 
@@ -66,8 +67,15 @@ Structured JSON output is required, so the application receives only a numeric s
 
 Prompt length itself does not earn points.
 
-## One-attempt rule
+## Attempt-limit rule
 
-After a successful grade, the API sets two HTTP-only cookies for one year: one marks the attempt as used, and the other stores a signed copy of the score and missing-items list. On reload, the server verifies the signature and returns the saved result so the UI can display it again. Failed API calls do not consume the attempt.
+After each successful grade, the API increments a signed attempt counter and stores the latest score plus missing-items list in an HTTP-only cookie for one year. On reload, the server verifies the signed state, returns the saved result, and compares `attemptsUsed` against the current `ATTEMPT_LIMIT`. Failed API calls do not consume an attempt.
 
 This is intentionally lightweight for a workshop or exercise. It prevents normal refresh-and-retry behavior, but clearing cookies or switching devices/browsers resets access. True one-attempt-per-person enforcement would require authentication plus persistent storage.
+
+
+### Raising the limit later
+
+Set `ATTEMPT_LIMIT=1` initially. If everyone has exhausted one attempt and you later change the Vercel environment variable to `ATTEMPT_LIMIT=2`, users with one recorded attempt will have one attempt remaining after the new deployment is active. No cookie reset or database migration is needed.
+
+Existing users from the original one-attempt version are migrated automatically and count as having used one attempt.
