@@ -41,6 +41,7 @@ Import this GitHub repository into Vercel and add this environment variable:
 Optional:
 
 - `GEMINI_MODEL` — defaults to `gemini-3.8-flash`
+- `RESULT_COOKIE_SECRET` — recommended; signs persisted grading results. If omitted, the server falls back to `GEMINI_API_KEY` for signing.
 
 No custom build settings are needed. Vercel will detect Next.js automatically.
 
@@ -67,6 +68,6 @@ Prompt length itself does not earn points.
 
 ## One-attempt rule
 
-After a successful grade, the API sets an HTTP-only cookie for one year and rejects later submissions from that browser. Failed API calls do not consume the attempt.
+After a successful grade, the API sets two HTTP-only cookies for one year: one marks the attempt as used, and the other stores a signed copy of the score and missing-items list. On reload, the server verifies the signature and returns the saved result so the UI can display it again. Failed API calls do not consume the attempt.
 
 This is intentionally lightweight for a workshop or exercise. It prevents normal refresh-and-retry behavior, but clearing cookies or switching devices/browsers resets access. True one-attempt-per-person enforcement would require authentication plus persistent storage.
