@@ -86,12 +86,9 @@ export default function Home() {
             <span className="pill bad">Too vague</span>
           </div>
           <p className="badPrompt">“{BAD_PROMPT}”</p>
-          <div className="whyBad">
-            <span>Missing audience</span>
-            <span>Missing tone</span>
-            <span>Missing format</span>
-            <span>Missing CTA</span>
-          </div>
+          <p className="badNote">
+            The AI has to make almost every important decision itself.
+          </p>
         </article>
 
         <form className="card goodCard" onSubmit={submitPrompt}>
