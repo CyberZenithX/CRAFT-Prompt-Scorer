@@ -1,7 +1,10 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const COOKIE = "prompt_challenge_attempted";
+const RESULT_COOKIE = "prompt_challenge_result";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const RUBRIC = [
   "You are grading ONE user-written AI prompt whose purpose is to generate an engaging Instagram caption for the following fixed scenario:",
@@ -43,6 +46,66 @@ type GeminiResult = {
   missing: string[];
 };
 
+function getCookieSecret() {
+  return process.env.RESULT_COOKIE_SECRET || process.env.GEMINI_API_KEY || "";
+}
+
+function signResult(result: GeminiResult) {
+  const secret = getCookieSecret();
+  if (!secret) throw new Error("No cookie-signing secret is configured.");
+
+  const payload = Buffer.from(JSON.stringify(result), "utf8").toString("base64url");
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+  return payload + "." + signature;
+}
+
+function readSignedResult(value?: string): GeminiResult | null {
+  if (!value) return null;
+
+  const secret = getCookieSecret();
+  if (!secret) return null;
+
+  const separator = value.lastIndexOf(".");
+  if (separator <= 0) return null;
+
+  const payload = value.slice(0, separator);
+  const signature = value.slice(separator + 1);
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
+
+  const providedBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8")
+    ) as GeminiResult;
+
+    if (
+      !Number.isInteger(parsed.score) ||
+      parsed.score < 0 ||
+      parsed.score > 100 ||
+      !Array.isArray(parsed.missing) ||
+      !parsed.missing.every((item) => typeof item === "string")
+    ) {
+      return null;
+    }
+
+    return {
+      score: parsed.score,
+      missing: parsed.missing.slice(0, 10)
+    };
+  } catch {
+    return null;
+  }
+}
+
 type InteractionStep = {
   type?: string;
   content?: Array<{
@@ -52,8 +115,12 @@ type InteractionStep = {
 };
 
 export async function GET(request: NextRequest) {
+  const attempted = request.cookies.get(COOKIE)?.value === "1";
+  const result = readSignedResult(request.cookies.get(RESULT_COOKIE)?.value);
+
   return NextResponse.json({
-    attempted: request.cookies.get(COOKIE)?.value === "1"
+    attempted,
+    result
   });
 }
 
@@ -179,13 +246,20 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ score, missing });
 
-    response.cookies.set(COOKIE, "1", {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       path: "/",
-      maxAge: 60 * 60 * 24 * 365
-    });
+      maxAge: COOKIE_MAX_AGE
+    };
+
+    response.cookies.set(COOKIE, "1", cookieOptions);
+    response.cookies.set(
+      RESULT_COOKIE,
+      signResult({ score, missing }),
+      cookieOptions
+    );
 
     return response;
   } catch (error) {
