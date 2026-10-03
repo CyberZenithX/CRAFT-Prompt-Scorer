@@ -50,22 +50,27 @@ The Gemini API key remains server-side and is never exposed to the browser.
 
 ## Grading
 
-Gemini receives a fixed 100-point rubric covering:
+Gemini scores submitted prompts using **CRAFT**, with five equally weighted categories:
 
-- task and deliverable clarity
-- product context
-- audience
-- core value proposition
-- communication goal
-- tone and voice
-- content guidance
-- Instagram-aware formatting
-- CTA
-- constraints and quality controls
+| Category | Points | What is evaluated |
+| --- | --- | --- |
+| Context | 20 | Café positioning, drink identity and qualities, target audience |
+| Role | 20 | An explicit, relevant copywriter or social media expert perspective |
+| Action | 20 | Instagram caption request, attention-grabbing hook, relevant call to action |
+| Format | 20 | Length, number of options/layout, emoji and hashtag guidance |
+| Tone | 20 | Clear voice, fit for the brand/audience, useful wording boundaries |
 
-Structured JSON output is required, so the application receives only a numeric score and an array of missing requirements. The Gemini request is stateless (`store: false`).
+The fixed scenario remains La Lumière Café's iced Spanish latte. The scenario is a grading reference; the user must communicate the relevant details in their prompt to earn credit. CRAFT headings are optional, equivalent wording counts, and prompt length itself does not earn points.
 
-Prompt length itself does not earn points.
+Gemini returns structured JSON with `score`, `categoryScores`, and `missing`. The server checks that each category is an integer from 0 to 20 and that their sum matches the total. Invalid responses do not consume an attempt. Missing requirements are prefixed with their CRAFT category. The public score/missing response and saved-result format remain compatible with existing attempts; previous scores are not regraded.
+
+The Gemini request is stateless (`store: false`). The rubric and result validation live in `app/api/grade/craft.ts`.
+
+Run the dependency-free CRAFT validation tests with Node.js 22.13+:
+
+```bash
+node tests/craft.test.mjs
+```
 
 ## Attempt-limit rule
 

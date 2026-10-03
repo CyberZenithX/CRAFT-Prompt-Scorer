@@ -183,37 +183,39 @@ export default function Home() {
       <section className="promptGuide">
         <div className="guideHeader">
           <div>
-            <span className="label">PROMPT BUILDING BLOCKS</span>
-            <h2>Keep these four things in mind</h2>
+            <span className="label">THE CRAFT FRAMEWORK</span>
+            <h2>Five ingredients. 100 points.</h2>
           </div>
           <p>
-            A good prompt does not need to be complicated. It just needs to remove the important guesswork.
+            Context, Role, Action, Format, and Tone. Each is worth 20 points; useful detail matters more than length.
           </p>
         </div>
 
-        <div className="guideGrid simpleGuide">
+        <div className="guideGrid craftGuide">
           <article className="guideCard">
-            <span className="guideNumber">01</span>
-            <h3>Task</h3>
-            <p>Tell the AI exactly what you want it to create.</p>
-          </article>
-
-          <article className="guideCard">
-            <span className="guideNumber">02</span>
+            <span className="guideNumber">C · 20 POINTS</span>
             <h3>Context</h3>
-            <p>Include the important details the AI needs to know.</p>
+            <p>Name the café, drink, its key qualities, and the audience.</p>
           </article>
-
           <article className="guideCard">
-            <span className="guideNumber">03</span>
-            <h3>Style</h3>
-            <p>Tell the AI how the result should sound, feel, or be written.</p>
+            <span className="guideNumber">R · 20 POINTS</span>
+            <h3>Role</h3>
+            <p>Give the AI a relevant role, such as a social media copywriter.</p>
           </article>
-
-          <article className="guideCard captionCard">
-            <span className="guideTag">CAPTION</span>
-            <h3>Hook + action</h3>
-            <p>For a caption, mention how it should grab attention and what you want the reader to do.</p>
+          <article className="guideCard">
+            <span className="guideNumber">A · 20 POINTS</span>
+            <h3>Action</h3>
+            <p>Ask for an Instagram caption, a strong hook, and a call to visit or try the drink.</p>
+          </article>
+          <article className="guideCard">
+            <span className="guideNumber">F · 20 POINTS</span>
+            <h3>Format</h3>
+            <p>Specify length, number of options, layout, and emoji and hashtag preferences.</p>
+          </article>
+          <article className="guideCard">
+            <span className="guideNumber">T · 20 POINTS</span>
+            <h3>Tone</h3>
+            <p>Choose a voice that suits the café and audience, with wording to avoid.</p>
           </article>
         </div>
       </section>
@@ -336,7 +338,7 @@ export default function Home() {
         </section>
       )}
 
-      <footer>Prompt quality is graded against a fixed rubric, not prompt length.</footer>
+      <footer>Prompt quality is graded using CRAFT: Context, Role, Action, Format, and Tone.</footer>
     </main>
   );
 }
